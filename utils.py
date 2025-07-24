@@ -6,30 +6,29 @@ from streamlit.logger import get_logger
 from langchain_openai import ChatOpenAI
 from langchain_community.chat_models import ChatOllama
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+from langchain_groq import ChatGroq
 
 logger = get_logger('Langchain-Chatbot')
 
 #decorator
 def enable_chat_history(func):
-    if os.environ.get("OPENAI_API_KEY"):
+    # to clear chat history after switching chatbot
+    current_page = func.__qualname__
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = current_page
+    if st.session_state["current_page"] != current_page:
+        try:
+            st.cache_resource.clear()
+            del st.session_state["current_page"]
+            del st.session_state["messages"]
+        except:
+            pass
 
-        # to clear chat history after swtching chatbot
-        current_page = func.__qualname__
-        if "current_page" not in st.session_state:
-            st.session_state["current_page"] = current_page
-        if st.session_state["current_page"] != current_page:
-            try:
-                st.cache_resource.clear()
-                del st.session_state["current_page"]
-                del st.session_state["messages"]
-            except:
-                pass
-
-        # to show chat history on ui
-        if "messages" not in st.session_state:
-            st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
-        for msg in st.session_state["messages"]:
-            st.chat_message(msg["role"]).write(msg["content"])
+    # to show chat history on ui
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+    for msg in st.session_state["messages"]:
+        st.chat_message(msg["role"]).write(msg["content"])
 
     def execute(*args, **kwargs):
         func(*args, **kwargs)
@@ -79,7 +78,7 @@ def choose_custom_openai_key():
     return model, openai_api_key
 
 def configure_llm():
-    available_llms = ["gpt-4.1-mini","llama3.2:3b","use your openai api key"]
+    available_llms = ["gpt-4.1-mini","llama3.2:3b", "groq", "use your openai api key"]
     llm_opt = st.sidebar.radio(
         label="LLM",
         options=available_llms,
@@ -90,6 +89,12 @@ def configure_llm():
         llm = ChatOllama(model="llama3.2", base_url=st.secrets["OLLAMA_ENDPOINT"])
     elif llm_opt == "gpt-4.1-mini":
         llm = ChatOpenAI(model_name=llm_opt, temperature=0, streaming=True, api_key=st.secrets["OPENAI_API_KEY"])
+    elif llm_opt == "groq":
+        llm = ChatGroq(
+            model="llama3-8b-8192",
+            groq_api_key=st.secrets["GROQ_API_KEY"],
+            temperature=0
+        )
     else:
         model, openai_api_key = choose_custom_openai_key()
         llm = ChatOpenAI(model_name=model, temperature=0, streaming=True, api_key=openai_api_key)

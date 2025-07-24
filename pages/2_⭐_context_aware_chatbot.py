@@ -34,7 +34,15 @@ class ContextChatbot:
                     {"input":user_query},
                     {"callbacks": [st_cb]}
                 )
-                response = result["response"]
+                
+                # Use streamed text if available, otherwise fall back to result response
+                streamed_response = st_cb.get_final_text()
+                if streamed_response.strip():
+                    response = streamed_response
+                else:
+                    response = result["response"]
+                    st.markdown(response)
+                
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 utils.print_qa(ContextChatbot, user_query, response)
 

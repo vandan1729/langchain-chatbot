@@ -3,9 +3,9 @@ import sqlite3
 import streamlit as st
 from pathlib import Path
 from sqlalchemy import create_engine
+from streaming import StreamHandler
 
 from langchain_community.agent_toolkits import create_sql_agent
-from langchain_community.callbacks import StreamlitCallbackHandler
 from langchain_community.utilities.sql_database import SQLDatabase
 
 st.set_page_config(page_title="ChatSQL", page_icon="🛢")
@@ -74,18 +74,23 @@ class SqlChatbot:
         user_query = st.chat_input(placeholder="Ask me anything!")
 
         if user_query:
-            st.session_state.messages.append({"role": "user", "content": user_query})
-            st.chat_message("user").write(user_query)
-
+            utils.display_msg(user_query, 'user')
             with st.chat_message("assistant"):
-                st_cb = StreamlitCallbackHandler(st.container())
+                st_cb = StreamHandler(st.empty())
                 result = agent.invoke(
                     {"input": user_query},
                     {"callbacks": [st_cb]}
                 )
-                response = result["output"]
+                
+                # Use streamed text if available, otherwise fall back to result response
+                streamed_response = st_cb.get_final_text()
+                if streamed_response.strip():
+                    response = streamed_response
+                else:
+                    response = result["output"]
+                    st.markdown(response)
+                
                 st.session_state.messages.append({"role": "assistant", "content": response})
-                st.write(response)
                 utils.print_qa(SqlChatbot, user_query, response)
 
 

@@ -1,11 +1,11 @@
 import utils
 import streamlit as st
+from streaming import StreamHandler
 
 from langchain import hub
 from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain_community.tools import DuckDuckGoSearchRun
-from langchain_community.callbacks import StreamlitCallbackHandler
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.tools import Tool
 
@@ -48,14 +48,21 @@ class InternetChatbot:
         if user_query:
             utils.display_msg(user_query, 'user')
             with st.chat_message("assistant"):
-                st_cb = StreamlitCallbackHandler(st.container())
+                st_cb = StreamHandler(st.empty())
                 result = agent_executor.invoke(
                     {"input": user_query, "chat_history": memory.chat_memory.messages},
                     {"callbacks": [st_cb]}
                 )
-                response = result["output"]
+                
+                # Use streamed text if available, otherwise fall back to result response
+                streamed_response = st_cb.get_final_text()
+                if streamed_response.strip():
+                    response = streamed_response
+                else:
+                    response = result["output"]
+                    st.markdown(response)
+                
                 st.session_state.messages.append({"role": "assistant", "content": response})
-                st.write(response)
                 utils.print_qa(InternetChatbot, user_query, response)
 
 
