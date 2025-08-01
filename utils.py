@@ -7,6 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_community.chat_models import ChatOllama
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI  # Add this import
 
 logger = get_logger('Langchain-Chatbot')
 
@@ -78,7 +79,7 @@ def choose_custom_openai_key():
     return model, openai_api_key
 
 def configure_llm():
-    available_llms = ["gpt-4.1-mini","llama3.2:3b", "groq", "use your openai api key"]
+    available_llms = ["gpt-4.1-mini","llama3.2:3b", "groq", "gemini", "use your openai api key"]
     llm_opt = st.sidebar.radio(
         label="LLM",
         options=available_llms,
@@ -93,6 +94,12 @@ def configure_llm():
         llm = ChatGroq(
             model="llama3-8b-8192",
             groq_api_key=st.secrets["GROQ_API_KEY"],
+            temperature=0
+        )
+    elif llm_opt == "gemini":  # Add this new condition
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-1.5-flash",
+            google_api_key=st.secrets["GOOGLE_API_KEY"],
             temperature=0
         )
     else:
