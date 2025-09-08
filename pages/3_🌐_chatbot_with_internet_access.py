@@ -1,21 +1,22 @@
-import utils
 import streamlit as st
-from streaming import StreamHandler
-
 from langchain import hub
-from langchain_openai import ChatOpenAI
+from langchain.agents import AgentExecutor, create_react_agent
 from langchain.memory import ConversationBufferMemory
 from langchain_community.tools import DuckDuckGoSearchRun
-from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.tools import Tool
 
+import utils
+from streaming import StreamHandler
+
 st.set_page_config(page_title="ChatNet", page_icon="🌐")
-st.header('Chatbot with Internet Access')
-st.write('Equipped with internet access, enables users to ask questions about recent events')
-st.write('[![view source code ](https://img.shields.io/badge/view_source_code-gray?logo=github)](https://github.com/vandan1729/langchain-chatbot/blob/master/pages/3_%F0%9F%8C%90_chatbot_with_internet_access.py)')
+st.header("Chatbot with Internet Access")
+st.write("Equipped with internet access, enables users to ask questions about recent events")
+st.write(
+    "[![view source code ](https://img.shields.io/badge/view_source_code-gray?logo=github)](https://github.com/vandan1729/langchain-chatbot/blob/master/pages/3_%F0%9F%8C%90_chatbot_with_internet_access.py)"
+)
+
 
 class InternetChatbot:
-
     def __init__(self):
         utils.sync_st_session()
         self.llm = utils.configure_llm()
@@ -46,14 +47,13 @@ class InternetChatbot:
         agent_executor, memory = self.setup_agent()
         user_query = st.chat_input(placeholder="Ask me anything!")
         if user_query:
-            utils.display_msg(user_query, 'user')
+            utils.display_msg(user_query, "user")
             with st.chat_message("assistant"):
                 st_cb = StreamHandler(st.empty())
                 result = agent_executor.invoke(
-                    {"input": user_query, "chat_history": memory.chat_memory.messages},
-                    {"callbacks": [st_cb]}
+                    {"input": user_query, "chat_history": memory.chat_memory.messages}, {"callbacks": [st_cb]}
                 )
-                
+
                 # Use streamed text if available, otherwise fall back to result response
                 streamed_response = st_cb.get_final_text()
                 if streamed_response.strip():
@@ -61,8 +61,9 @@ class InternetChatbot:
                 else:
                     response = result["output"]
                     st.markdown(response)
-                
-                st.session_state.messages.append({"role": "assistant", "content": response})
+
+                # Get current LLM model and store with response
+                utils.add_assistant_message_to_history(response)
                 utils.print_qa(InternetChatbot, user_query, response)
 
 
