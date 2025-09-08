@@ -104,12 +104,7 @@ class CustomDocChatbot:
                     st.markdown(response)
                 
                 # Get current LLM model and store with response
-                current_llm = utils.get_current_llm_model()
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": response,
-                    "llm_model": current_llm
-                })
+                utils.add_assistant_message_to_history(response)
                 utils.print_qa(CustomDocChatbot, user_query, response)
 
                 # to show references
